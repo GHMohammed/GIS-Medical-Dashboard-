@@ -18,133 +18,29 @@
 
 ## 📋 نظرة عامة
 
-مشروع **إثبات مفهوم (Proof of Concept)** جاهز للعرض، يُحاكي غرفة عمليات طبية سورية. يعرض خريطة جغرافية (GIS) حيّة للمشافي وأسطول سيارات الإسعاف والحوادث الطارئة، مع **توجيه إسعاف مدفوع من قاعدة البيانات**، ومراقبة إشغال المشافي، وإعادة تشغيل تاريخية، ودعم كامل للغتين **العربية (الافتراضية، من اليمين لليسار)** و**الإنجليزية (من اليسار لليمين)**.
+مشروع **إثبات مفهوم (Proof of Concept)** جاهز للعرض، يُحاكي غرفة عمليات طبية سورية. يعرض خريطة جغرافية (GIS) حيّة للمشافي وأسطول سيارات الإسعاف والحوادث الطارئة، مع **توجيه إسعاف مدفوع من قاعدة البيانات**، ومراقبة إشغال المشافي، وإعادة تشغيل تاريخية، ودعم كامل للغتين **العربية (الافتراضية، RTL)** و**الإنجليزية (LTR)**.
 
-> **المبدأ التصميمي الأساسي:** المتصفح **لا** يحسب المسافات، و**لا** يختار سيارة الإسعاف، و**لا** يشتقّ حالة الإشغال. هو فقط يقرأ *Views* من قاعدة البيانات، ويستدعي دوال *RPC*، ويعرض النتيجة. كل المنطق الموثوق يعيش داخل PostgreSQL/PostGIS.
+يعتمد المشروع على فكرة محورية واحدة: **قاعدة البيانات هي مصدر الحقيقة الوحيد**.
 
----
+> **المبدأ التصميمي:** المتصفح **لا** يحسب المسافات، و**لا** يختار سيارة الإسعاف، و**لا** يشتقّ حالة الإشغال. هو فقط يقرأ *Views* من قاعدة البيانات، ويستدعي دوال *RPC*، ويعرض النتيجة. كل المنطق الموثوق يعيش داخل PostgreSQL/PostGIS.
 
-## ✨ أهم الميزات
+**أبرز ما يقدّمه:**
 
-- 🗺️ **خريطة GIS حيّة** — مبنية على Leaflet مع تجميع العلامات (clustering)، مشافٍ ملوّنة حسب الحالة، سيارات إسعاف متحركة، وخطوط توجيه مرسومة.
-- 🚑 **توجيه إسعاف من قاعدة البيانات** — PostgreSQL يختار ويقفل أقرب سيارة إسعاف متاحة؛ وحالات الفشل تُعرَض برسائل صريحة ومنفصلة.
-- 🏥 **مراقبة الإشغال** — حالة المشفى (أخضر GREEN / أحمر RED) تُحسَب عبر *Trigger* في قاعدة البيانات (`> 90%` = أحمر).
-- 📡 **مزامنة لحظية (Realtime)** — قناة Supabase واحدة تُستخدم كإشارة "إبطال" فقط؛ اللوحة تعيد قراءة اللقطة الموثوقة دائماً، فلا يمكن لانقطاع الاتصال أن يترك بيانات قديمة على الشاشة.
-- 🕓 **إعادة تشغيل تاريخية** — اختر أي وقت سابق لعرض لقطة زمنية دقيقة؛ تُعطَّل فيها إجراءات التوجيه ولا تُخلَط البيانات الحيّة بالتاريخية.
-- 🔁 **محاكي مدمج** — مهمة `pg_cron` تُحرّك الأسطول والإشغال والحوادث كل 5 ثوانٍ لعرض ذاتي الحركة.
-- 🌍 **واجهة ثنائية اللغة بالكامل** — العربية أولاً (RTL) والإنجليزية (LTR) مع أرقام وتواريخ حسب اللغة.
-
----
-
-## 🛠️ التقنيات المستخدمة
-
-| الطبقة | التقنية |
-| --- | --- |
-| الواجهة | React 19، TanStack Router / Start (تصيير من الخادم SSR)، Vite 8، TypeScript |
-| التنسيق | Tailwind CSS v4، shadcn/ui (مبنية على Radix)، أيقونات Lucide |
-| الخرائط | Leaflet، react-leaflet، react-leaflet-cluster |
-| البيانات والحالة | TanStack Query، عميل Supabase |
-| الواجهة الخلفية | PostgreSQL 15 + PostGIS 3.3، Supabase (Realtime، RPC، RLS) |
-| اللغات | مزوّد i18n خفيف مخصّص (عربي RTL افتراضي + إنجليزي LTR) |
-
-> **ملاحظة حول البناء:** منظومة البناء (Vite/SSR) مُجمّعة عبر حزمة `@lovable.dev/vite-tanstack-config` (انظر [`vite.config.ts`](vite.config.ts)). هذه الحزمة الواحدة تربط TanStack Start و Nitro و Tailwind ومسارات الاستيراد وحقن متغيرات البيئة، وهي **مطلوبة** لكي يعمل المشروع ويُبنى.
-
----
-
-## 🗂️ هيكل المشروع (شرح كل ملف)
-
-### الجذر (الملفات الرئيسية)
-
-| الملف | الوصف |
-| --- | --- |
-| [`package.json`](package.json) | تبعيات المشروع وأوامر التشغيل (`dev`، `build`، `lint`، `format`) |
-| [`vite.config.ts`](vite.config.ts) | إعداد Vite/SSR عبر حزمة Lovable — يوجّه نقطة دخول الخادم إلى `src/server.ts` |
-| [`tsconfig.json`](tsconfig.json) | إعداد TypeScript (وضع صارم، مسار الاختصار `@/*`) |
-| [`eslint.config.js`](eslint.config.js) | قواعد فحص الكود (ESLint + Prettier) |
-| `components.json` | إعداد shadcn/ui لتوليد المكوّنات |
-| `.env` | متغيّرات البيئة (رابط Supabase والمفتاح العلني) — **لا تُرفَع الأسرار الحقيقية** |
-| `bunfig.toml` / `bun.lock` | إعداد وقفل حزم مدير الحزم Bun |
-| `.prettierrc` / `.prettierignore` | إعداد منسّق الكود Prettier |
-| [`README.md`](README.md) | هذا الملف |
-
-### `src/` — الشيفرة المصدرية
-
-#### 🚏 المسارات (Routes) والدخول
-
-| الملف | الوصف |
-| --- | --- |
-| [`src/routes/__root.tsx`](src/routes/__root.tsx) | **الغلاف الجذري** للتطبيق: قالب HTML، مزوّدات (QueryClient و i18n)، حدود الأخطاء (Error Boundary)، وصفحة 404 |
-| [`src/routes/index.tsx`](src/routes/index.tsx) | **الصفحة الرئيسية / اللوحة**: مؤشّرات KPI، الفلاتر، الخريطة، لوحة العمليات، التنبيهات، وتدفّق التوجيه |
-| [`src/router.tsx`](src/router.tsx) | إنشاء موجّه TanStack وربط `QueryClient` |
-| [`src/routeTree.gen.ts`](src/routeTree.gen.ts) | شجرة المسارات المُولَّدة تلقائياً — **لا يُعدَّل يدوياً** |
-| [`src/server.ts`](src/server.ts) | غلاف SSR الذي يلتقط الأخطاء ويعرض صفحة خطأ نظيفة |
-| [`src/start.ts`](src/start.ts) | نقطة انطلاق TanStack Start |
-| [`src/styles.css`](src/styles.css) | أنماط Tailwind العامة ومتغيّرات الألوان (الثيم) |
-
-#### 🗺️ مكوّنات الخريطة
-
-| الملف | الوصف |
-| --- | --- |
-| [`src/components/map/MapPanel.tsx`](src/components/map/MapPanel.tsx) | غلاف الخريطة الذي يُحمَّل على العميل فقط (Leaflet لا يعمل على الخادم) |
-| [`src/components/map/OpsMap.tsx`](src/components/map/OpsMap.tsx) | خريطة العمليات الفعلية: العلامات، التجميع، خطوط التوجيه، والتركيز على عنصر |
-| [`src/components/map/markerIcons.ts`](src/components/map/markerIcons.ts) | تعريف أيقونات العلامات (مشفى / إسعاف / حادث) حسب الحالة |
-
-#### 🎨 مكوّنات الواجهة
-
-| المسار | الوصف |
-| --- | --- |
-| `src/components/ui/*.tsx` | مكتبة مكوّنات **shadcn/ui** (زر، بطاقة، حوار، تبويبات، قوائم…) — مكوّنات عامة قابلة لإعادة الاستخدام مبنية على Radix |
-
-#### 🧠 الخدمات (الطبقة الوحيدة التي تتحدث مع قاعدة البيانات)
-
-| الملف | الوصف |
-| --- | --- |
-| [`src/services/supabase.ts`](src/services/supabase.ts) | تصدير عميل Supabase المُشترَك |
-| [`src/services/medical.service.ts`](src/services/medical.service.ts) | قراءة الـ *Views* وتحويلها إلى صفوف مُنمَّطة + تجميع لقطة اللوحة (`fetchDashboardSnapshot`) |
-| [`src/services/dispatch.service.ts`](src/services/dispatch.service.ts) | استدعاء `process_emergency_routing` و `complete_dispatch` وتصنيف أخطاء التوجيه |
-| [`src/services/history.service.ts`](src/services/history.service.ts) | جلب اللقطة التاريخية عبر `get_historical_snapshot` |
-| [`src/services/simulator.service.ts`](src/services/simulator.service.ts) | قراءة حالة المحاكي وتفعيله/إيقافه |
-
-#### 🔌 التكامل مع Supabase
-
-| الملف | الوصف |
-| --- | --- |
-| [`src/integrations/supabase/client.ts`](src/integrations/supabase/client.ts) | عميل Supabase لجهة العميل (المتصفح) — يدعم مفاتيح API الجديدة |
-| [`src/integrations/supabase/client.server.ts`](src/integrations/supabase/client.server.ts) | عميل Supabase لجهة الخادم (SSR) |
-| [`src/integrations/supabase/auth-middleware.ts`](src/integrations/supabase/auth-middleware.ts) | وسيط للتحقق من رموز المصادقة على الخادم |
-| [`src/integrations/supabase/auth-attacher.ts`](src/integrations/supabase/auth-attacher.ts) | إرفاق رمز المصادقة بالطلبات |
-| [`src/integrations/supabase/types.ts`](src/integrations/supabase/types.ts) | أنواع قاعدة البيانات المُولَّدة تلقائياً |
-
-#### 🪝 الخطّافات (Hooks) واللغات والأدوات
-
-| الملف | الوصف |
-| --- | --- |
-| [`src/hooks/useMedicalRealtime.ts`](src/hooks/useMedicalRealtime.ts) | خطّاف Realtime: قناة واحدة مشتركة، حالة اتصال مرئية، وإعادة مزامنة كاملة عند إعادة الاتصال |
-| [`src/hooks/use-mobile.tsx`](src/hooks/use-mobile.tsx) | خطّاف كشف شاشة الجوال |
-| [`src/i18n/index.tsx`](src/i18n/index.tsx) | مزوّد اللغة: التبديل، الاتجاه (RTL/LTR)، تنسيق الأرقام والتواريخ |
-| [`src/i18n/translations.ts`](src/i18n/translations.ts) | جميع النصوص المترجمة (عربي / إنجليزي) وأسماء المحافظات |
-| [`src/lib/medical-utils.ts`](src/lib/medical-utils.ts) | دوال تصفية المشافي/الإسعاف/الحوادث وحساب المسافات للعرض |
-| [`src/lib/utils.ts`](src/lib/utils.ts) | أدوات عامة (دمج أصناف Tailwind، إلخ) |
-| [`src/lib/error-capture.ts`](src/lib/error-capture.ts) | التقاط الأخطاء الأصلية خارج النطاق لاسترجاعها في SSR |
-| [`src/lib/error-page.ts`](src/lib/error-page.ts) | توليد صفحة الخطأ عند فشل الخادم |
-| [`src/lib/lovable-error-reporting.ts`](src/lib/lovable-error-reporting.ts) | إعادة توجيه أخطاء الحدود إلى تتبّع محرّر Lovable (لا يفعل شيئاً خارج المحرّر) |
-| [`src/types/medical.ts`](src/types/medical.ts) | عقود الأنواع لصفوف الجداول وحمولات دوال RPC |
-
-### `supabase/` — قاعدة البيانات
-
-| الملف | الوصف |
-| --- | --- |
-| `supabase/config.toml` | إعداد مشروع Supabase |
-| `supabase/migrations/…_1002_….sql` | **المخطط الأساسي**: الجداول، الأنواع، الفهارس، الـ Triggers، RLS، Realtime |
-| `supabase/migrations/…_1059_….sql` | الـ *Views* ودوال RPC (التوجيه، الإكمال، قراءة التنبيه، اللقطة التاريخية) |
-| `supabase/migrations/…_4822_….sql` | جدول إعدادات المحاكي + دالة `simulate_tick` + جدولة `pg_cron` |
-| `supabase/migrations/…_5530_….sql` | تحديث دالة `process_emergency_routing` |
+- 🗺️ خريطة GIS حيّة (Leaflet) مع تجميع العلامات، مشافٍ ملوّنة حسب الحالة، سيارات إسعاف متحركة، وخطوط توجيه مرسومة.
+- 🚑 توجيه إسعاف تختار فيه قاعدة البيانات أقرب سيارة متاحة وتقفلها؛ وحالات الفشل تُعرَض برسائل صريحة منفصلة.
+- 🏥 مراقبة إشغال المشافي بحالتَي أخضر/أحمر تُحسَبان عبر *Trigger* (`> 90%` = أحمر).
+- 📡 مزامنة لحظية (Realtime) تُستخدم كإشارة "إبطال" فقط، فلا يترك انقطاع الاتصال بيانات قديمة على الشاشة.
+- 🕓 إعادة تشغيل تاريخية لأي لحظة سابقة دون خلط البيانات الحيّة بالتاريخية.
+- 🔁 محاكي مدمج (`pg_cron`) يُحرّك الأسطول والإشغال والحوادث كل 5 ثوانٍ.
+- 🌍 واجهة ثنائية اللغة بالكامل مع أرقام وتواريخ حسب اللغة.
 
 ---
 
 ## 🗃️ مخطط قاعدة البيانات (ERD)
 
-> يُعرَض المخطط تلقائياً على GitHub (Mermaid).
+قاعدة البيانات هي قلب المشروع. تتكوّن من **8 جداول** (5 أساسية + جدولا تاريخ + جدول إعدادات المحاكي)، وتُغلَّف بـ *Views* ودوال *RPC* تستهلكها الواجهة.
+
+> يُعرَض المخطط تلقائياً بشكل رسومي على GitHub (Mermaid).
 
 ```mermaid
 erDiagram
@@ -238,10 +134,10 @@ erDiagram
 - **`dispatch_assignments`** هو الجدول المحوري: يربط حادثاً (`emergency_id`) بمشفى (`hospital_id`) وسيارة إسعاف (`ambulance_id`)، مع `ON DELETE RESTRICT` لمنع حذف كيان مرتبط بتوجيه.
 - **قيدان فريدان جزئيان** يضمنان تعييناً نشطاً واحداً فقط لكل حادث ولكل سيارة إسعاف (حيث `completed_at IS NULL`).
 - **جداول التاريخ** (`*_history`) تُكتب تلقائياً عبر Triggers عند كل تغيير، وترتبط بجداولها الأصلية بـ `ON DELETE CASCADE`.
-- **`alerts`** يربط اختيارياً بأربعة كيانات (مفاتيح أجنبية nullable مع `ON DELETE SET NULL`) لأن التنبيه قد يخصّ أي منها.
+- **`alerts`** يربط اختيارياً بأربعة كيانات (مفاتيح أجنبية nullable مع `ON DELETE SET NULL`) لأن التنبيه قد يخصّ أياً منها.
 - **`simulator_settings`** جدول أحادي الصف (مفتاحه `boolean` دائماً `true`) يحمل حالة المحاكي.
 
-### كائنات مشتقّة (Views + RPC)
+### الكائنات المشتقّة (Views + RPC)
 
 | النوع | الاسم | الغرض |
 | --- | --- | --- |
@@ -254,6 +150,116 @@ erDiagram
 | RPC | `get_historical_snapshot()` | لقطة زمنية من جداول التاريخ |
 | RPC | `mark_alert_read()` | تعليم تنبيه كمقروء |
 | RPC | `simulate_tick()` / `set_simulator_enabled()` | نبضة المحاكاة والتحكّم بها |
+
+---
+
+## 🗂️ هيكل المشروع
+
+```
+syria-med-map-main/
+│
+├── src/                                  # الشيفرة المصدرية
+│   │
+│   ├── components/                       # مكوّنات واجهة المستخدم
+│   │   ├── ui/                           # مكوّنات shadcn-ui الأساسية (زر، بطاقة، حوار، تبويبات…)
+│   │   └── map/                          # مكوّنات الخريطة
+│   │       ├── MapPanel.tsx              # غلاف الخريطة (يُحمَّل على العميل فقط)
+│   │       ├── OpsMap.tsx                # خريطة العمليات: العلامات، التجميع، خطوط التوجيه، التركيز
+│   │       └── markerIcons.ts            # أيقونات العلامات (مشفى / إسعاف / حادث) حسب الحالة
+│   │
+│   ├── routes/                           # مسارات التطبيق (TanStack Router)
+│   │   ├── __root.tsx                    # الغلاف الجذري: قالب HTML، المزوّدات، حدود الأخطاء وصفحة 404
+│   │   └── index.tsx                     # اللوحة الرئيسية: KPIs، الفلاتر، الخريطة، لوحة العمليات، التوجيه
+│   │
+│   ├── services/                         # الطبقة الوحيدة التي تتحدث مع قاعدة البيانات
+│   │   ├── supabase.ts                   # عميل Supabase المشترَك
+│   │   ├── medical.service.ts            # قراءة الـ Views + تجميع لقطة اللوحة
+│   │   ├── dispatch.service.ts           # process_emergency_routing / complete_dispatch
+│   │   ├── history.service.ts            # get_historical_snapshot
+│   │   └── simulator.service.ts          # قراءة حالة المحاكي وتفعيله/إيقافه
+│   │
+│   ├── integrations/supabase/            # التكامل مع Supabase
+│   │   ├── client.ts                     # عميل جهة العميل (المتصفح)
+│   │   ├── client.server.ts              # عميل جهة الخادم (SSR)
+│   │   ├── auth-middleware.ts            # وسيط التحقق من رموز المصادقة على الخادم
+│   │   ├── auth-attacher.ts              # إرفاق رمز المصادقة بالطلبات
+│   │   └── types.ts                      # أنواع قاعدة البيانات المولّدة تلقائياً
+│   │
+│   ├── hooks/                            # الخطّافات (React Hooks)
+│   │   ├── useMedicalRealtime.ts         # قناة Realtime واحدة + حالة اتصال + إعادة مزامنة كاملة
+│   │   └── use-mobile.tsx                # كشف شاشة الجوال
+│   │
+│   ├── i18n/                             # الترجمة وتعدّد اللغات
+│   │   ├── index.tsx                     # مزوّد اللغة: التبديل، الاتجاه (RTL/LTR)، تنسيق الأرقام والتواريخ
+│   │   └── translations.ts              # النصوص المترجمة (عربي / إنجليزي) وأسماء المحافظات
+│   │
+│   ├── lib/                              # أدوات ومساعدات
+│   │   ├── medical-utils.ts              # تصفية المشافي/الإسعاف/الحوادث وحساب مسافات العرض
+│   │   ├── utils.ts                      # أدوات عامة (دمج أصناف Tailwind…)
+│   │   ├── error-capture.ts              # التقاط الأخطاء الأصلية لاسترجاعها في SSR
+│   │   ├── error-page.ts                 # توليد صفحة الخطأ عند فشل الخادم
+│   │   └── lovable-error-reporting.ts    # إعادة توجيه أخطاء الحدود لتتبّع Lovable (لا يفعل شيئاً خارج المحرّر)
+│   │
+│   ├── types/
+│   │   └── medical.ts                    # عقود الأنواع لصفوف الجداول وحمولات RPC
+│   │
+│   ├── router.tsx                        # إنشاء الموجّه وربط QueryClient
+│   ├── routeTree.gen.ts                  # شجرة المسارات المولّدة تلقائياً (لا تُعدَّل يدوياً)
+│   ├── server.ts                         # غلاف SSR الذي يلتقط الأخطاء
+│   ├── start.ts                          # نقطة انطلاق TanStack Start
+│   └── styles.css                        # أنماط Tailwind العامة ومتغيّرات الثيم
+│
+├── supabase/                             # قاعدة البيانات
+│   ├── config.toml                       # إعداد مشروع Supabase
+│   └── migrations/                       # ملفات الهجرة (تُطبَّق بترتيب أسمائها)
+│       ├── …_1002_….sql                  # المخطط الأساسي: الجداول، الأنواع، الفهارس، Triggers، RLS، Realtime
+│       ├── …_1059_….sql                  # الـ Views ودوال RPC (التوجيه، الإكمال، التنبيهات، اللقطة التاريخية)
+│       ├── …_4822_….sql                  # جدول إعدادات المحاكي + simulate_tick + جدولة pg_cron
+│       └── …_5530_….sql                  # تحديث دالة process_emergency_routing
+│
+├── public/                              # ملفات ثابتة (favicon، robots.txt)
+│
+├── package.json                         # التبعيات وأوامر التشغيل
+├── vite.config.ts                       # إعداد Vite/SSR (عبر حزمة Lovable) — يوجّه دخول الخادم لـ src/server.ts
+├── tsconfig.json                        # إعداد TypeScript (وضع صارم + مسار الاختصار @/*)
+├── eslint.config.js                     # قواعد ESLint + Prettier
+├── components.json                      # إعداد shadcn/ui
+├── .env                                 # متغيّرات البيئة (رابط Supabase والمفتاح العلني)
+└── README.md                            # هذا الملف
+```
+
+---
+
+## 🛠️ التقنيات المستخدمة
+
+| الطبقة | التقنية |
+| --- | --- |
+| الواجهة | React 19، TanStack Router / Start (تصيير من الخادم SSR)، Vite 8، TypeScript |
+| التنسيق | Tailwind CSS v4، shadcn/ui (مبنية على Radix)، أيقونات Lucide |
+| الخرائط | Leaflet، react-leaflet، react-leaflet-cluster |
+| البيانات والحالة | TanStack Query، عميل Supabase |
+| الواجهة الخلفية | PostgreSQL 15 + PostGIS 3.3، Supabase (Realtime، RPC، RLS) |
+| اللغات | مزوّد i18n خفيف مخصّص (عربي RTL افتراضي + إنجليزي LTR) |
+| جودة الكود | ESLint + Prettier + TypeScript (وضع صارم) |
+
+> **ملاحظة حول البناء:** منظومة البناء (Vite/SSR) مُجمّعة عبر حزمة `@lovable.dev/vite-tanstack-config` (انظر [`vite.config.ts`](vite.config.ts)). هذه الحزمة تربط TanStack Start و Nitro و Tailwind ومسارات الاستيراد وحقن متغيّرات البيئة، وهي **مطلوبة** لكي يعمل المشروع ويُبنى.
+
+### 🔄 إدارة الحالة (State Management)
+
+- **حالة الخادم (Server State):** تُدار عبر **TanStack Query**. لقطة اللوحة (`fetchDashboardSnapshot`) تُجلَب كاستعلام واحد، وحالة المحاكي كاستعلام دوري كل 15 ثانية.
+- **المزامنة اللحظية:** خطّاف [`useMedicalRealtime`](src/hooks/useMedicalRealtime.ts) يفتح **قناة Realtime واحدة مشتركة**، ويستخدم أحداث التغيير كإشارة **إبطال (invalidation)** فقط — ثم يُعيد جلب اللقطة الموثوقة كاملةً. بهذا لا يمكن لتحديث جزئي أو انقطاع مؤقت أن يترك حالة غير متسقة.
+- **إعادة المزامنة عند إعادة الاتصال:** عند عودة الاتصال تُقرأ اللقطة الكاملة من جديد، فتُصحَّح أي أحداث فاتت أثناء الانقطاع.
+- **الحالة المحلية للواجهة:** الفلاتر، العنصر المُركَّز عليه، الوضع التاريخي، وحالة التوجيه تُدار بـ `useState` داخل [`index.tsx`](src/routes/index.tsx).
+- **فصل الطبقات:** المكوّنات لا تلمس قاعدة البيانات مباشرة إطلاقاً؛ كل الوصول يمرّ عبر مجلّد [`src/services/`](src/services/).
+
+### 🔐 الأمان والحماية
+
+- **مفتاح علني فقط في المتصفح:** يصل فقط المفتاح العلني (anon) عبر `VITE_SUPABASE_PUBLISHABLE_KEY`. **لا يوجد** مفتاح `service-role` في الواجهة الأمامية إطلاقاً.
+- **أمان مستوى الصف (Row Level Security):** مُفعّل على **كل** الجداول العامة. لا يوجد تسجيل دخول في هذا الـ PoC، فلكل جدول سياسة قراءة واحدة فقط (`SELECT`) لـ `anon` / `authenticated`.
+- **لا كتابة مباشرة من العميل:** كل التعديلات تمرّ حصراً عبر دوال `SECURITY DEFINER` (RPC). لا يقبل أي جدول كتابةً مباشرة من العميل، ما يمنع التلاعب بالبيانات.
+- **حماية المحاكي:** `simulate_tick()` غير قابل للاستدعاء من `anon`؛ مُجدوِل `pg_cron` وحده يشغّله.
+- **سلامة البيانات على مستوى القاعدة:** قيود `CHECK` (سعة الأسرّة، نطاق الاتجاه، اتساق التوقيتات)، ومفاتيح أجنبية بسلوك حذف صريح (`RESTRICT` / `CASCADE` / `SET NULL`)، وقيود فريدة جزئية تمنع تعييناً مزدوجاً لسيارة إسعاف واحدة.
+- **معالجة أخطاء صريحة:** أخطاء التوجيه تُصنَّف وتُعرَض للمستخدم برسائل منفصلة (لا إسعاف متاح / الحادث غير نشط / غير موجود / تحقّق / شبكة).
 
 ---
 
@@ -349,15 +355,6 @@ select * from public.simulator_settings;     -- enabled, last_tick_at, tick_coun
 
 ---
 
-## 🔐 الأمان
-
-- يصل فقط **المفتاح العلني (anon)** إلى شيفرة المتصفح عبر `VITE_SUPABASE_PUBLISHABLE_KEY`. لا يوجد مفتاح `service-role` في الواجهة الأمامية.
-- **أمان مستوى الصف (RLS)** مُفعّل على كل الجداول العامة. لا يوجد تسجيل دخول في هذا الـ PoC، فلكل جدول سياسة قراءة واحدة فقط لـ `anon` / `authenticated`.
-- كل التعديلات تمرّ عبر دوال `SECURITY DEFINER` — لا يقبل أي جدول كتابةً مباشرة من العميل.
-- `simulate_tick()` غير قابل للاستدعاء من `anon`؛ المُجدوِل وحده يشغّله.
-
----
-
 ## 🎬 سيناريو العرض (≈ 3 دقائق)
 
 1. افتح اللوحة بالعربية — لاحظ تخطيط RTL، صفّ المؤشّرات KPI، ومؤشّر "متصل" الأخضر.
@@ -372,4 +369,4 @@ select * from public.simulator_settings;     -- enabled, last_tick_at, tick_coun
 
 ## 📌 حالة المشروع
 
-إثبات مفهوم (PoC) جاهز للعرض. غير مُهيّأ للإنتاج من حيث المصادقة، والتحكّم متعدد المستأجرين بالوصول، أو النشر عالي التوفّر.
+إثبات مفهوم (PoC) جاهز للعرض. غير مُهيّأ للإنتاج من حيث المصادقة، والتحكّم متعدّد المستأجرين بالوصول، أو النشر عالي التوفّر.
