@@ -5,6 +5,8 @@ export const translations = {
     "app.subtitle": "غرفة العمليات الطبية",
     "lang.switch": "English",
     "lang.label": "تغيير اللغة",
+    "menu.open": "القائمة",
+    "menu.title": "الإعدادات وحالة النظام",
 
     "rt.connecting": "جارٍ الاتصال",
     "rt.connected": "متصل",
@@ -171,6 +173,8 @@ export const translations = {
     "app.subtitle": "Medical Operations Room",
     "lang.switch": "العربية",
     "lang.label": "Change language",
+    "menu.open": "Menu",
+    "menu.title": "Settings & status",
 
     "rt.connecting": "Connecting",
     "rt.connected": "Connected",

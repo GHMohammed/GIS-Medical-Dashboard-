@@ -2,11 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Menu } from "lucide-react";
 import { MapPanel } from "@/components/map/MapPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useI18n } from "@/i18n";
 import { useMedicalRealtime } from "@/hooks/useMedicalRealtime";
 import { fetchDashboardSnapshot, markAlertRead } from "@/services/medical.service";
@@ -74,6 +82,7 @@ function Dashboard() {
   const [historyInput, setHistoryInput] = useState("");
   const [dispatching, setDispatching] = useState(false);
   const [simEnabled, setSimEnabled] = useState<boolean | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isHistorical = historical !== null;
 
@@ -204,53 +213,111 @@ function Dashboard() {
 
   const activeFilterCount = countActiveFilters(filters);
 
+  async function toggleSimulator() {
+    const next = !simOn;
+    setSimEnabled(next);
+    const ok = await setSimulatorEnabled(next);
+    if (!ok) setSimEnabled(!next);
+    void simQuery.refetch();
+  }
+
+  const rtDotClass =
+    rtStatus === "connected" ? "bg-ok" : rtStatus === "disconnected" ? "bg-critical" : "bg-warn";
+
   return (
     <div dir={dir} className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-[900] border-b border-border bg-navy text-navy-foreground">
-        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-base font-extrabold sm:text-lg">{t("app.title")}</h1>
-            <p className="text-xs opacity-70">{t("app.subtitle")}</p>
+            <p className="truncate text-xs opacity-70">{t("app.subtitle")}</p>
           </div>
-          <span
-            className="inline-flex items-center gap-2 rounded-full bg-navy-2 px-3 py-1 text-xs font-semibold"
-            aria-label={t("rt.label")}
-          >
+
+          {/* Desktop / tablet: controls laid out inline */}
+          <div className="hidden items-center gap-3 md:flex">
             <span
-              className={`size-2 rounded-full ${
-                rtStatus === "connected"
-                  ? "bg-ok"
-                  : rtStatus === "disconnected"
-                    ? "bg-critical"
-                    : "bg-warn"
-              }`}
-            />
-            {t(`rt.${rtStatus}`)}
-          </span>
-          <Badge variant={isHistorical ? "secondary" : "default"}>
-            {isHistorical ? t("mode.historical") : t("mode.live")}
-          </Badge>
-          <Button
-            size="sm"
-            variant="secondary"
-            aria-label={t("sim.label")}
-            title={t("sim.label")}
-            onClick={async () => {
-              const next = !simOn;
-              setSimEnabled(next);
-              const ok = await setSimulatorEnabled(next);
-              if (!ok) setSimEnabled(!next);
-              void simQuery.refetch();
-            }}
-          >
-            <span
-              className={`me-2 inline-block size-2 rounded-full ${simOn ? "bg-ok" : "bg-muted-foreground"}`}
-            />
-            {simOn ? t("sim.pause") : t("sim.resume")}
-          </Button>
-          <Button size="sm" variant="secondary" onClick={toggle} aria-label={t("lang.label")}>
-            {t("lang.switch")}
-          </Button>
+              className="inline-flex items-center gap-2 rounded-full bg-navy-2 px-3 py-1 text-xs font-semibold"
+              aria-label={t("rt.label")}
+            >
+              <span className={`size-2 rounded-full ${rtDotClass}`} />
+              {t(`rt.${rtStatus}`)}
+            </span>
+            <Badge variant={isHistorical ? "secondary" : "default"}>
+              {isHistorical ? t("mode.historical") : t("mode.live")}
+            </Badge>
+            <Button
+              size="sm"
+              variant="secondary"
+              aria-label={t("sim.label")}
+              title={t("sim.label")}
+              onClick={toggleSimulator}
+            >
+              <span
+                className={`me-2 inline-block size-2 rounded-full ${simOn ? "bg-ok" : "bg-muted-foreground"}`}
+              />
+              {simOn ? t("sim.pause") : t("sim.resume")}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={toggle} aria-label={t("lang.label")}>
+              {t("lang.switch")}
+            </Button>
+          </div>
+
+          {/* Mobile: compact status dot + side menu with all controls */}
+          <div className="flex items-center gap-2 md:hidden">
+            <span className={`size-2.5 rounded-full ${rtDotClass}`} aria-label={t("rt.label")} />
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="secondary" aria-label={t("menu.open")}>
+                  <Menu className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side={dir === "rtl" ? "left" : "right"}
+                className="w-72 max-w-[85vw] text-foreground"
+              >
+                <SheetHeader>
+                  <SheetTitle className="text-start">{t("menu.title")}</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 flex flex-col gap-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">{t("rt.label")}</span>
+                    <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                      <span className={`size-2.5 rounded-full ${rtDotClass}`} />
+                      {t(`rt.${rtStatus}`)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">{t("history.title")}</span>
+                    <Badge variant={isHistorical ? "secondary" : "default"}>
+                      {isHistorical ? t("mode.historical") : t("mode.live")}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    className="w-full justify-center"
+                    aria-label={t("sim.label")}
+                    onClick={toggleSimulator}
+                  >
+                    <span
+                      className={`me-2 inline-block size-2 rounded-full ${simOn ? "bg-ok" : "bg-muted-foreground"}`}
+                    />
+                    {simOn ? t("sim.pause") : t("sim.resume")}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="w-full justify-center"
+                    aria-label={t("lang.label")}
+                    onClick={() => {
+                      toggle();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {t("lang.switch")}
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
