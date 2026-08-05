@@ -49,7 +49,7 @@ function legendColor(cls: string) {
 
 export function MapPanel(props: OpsMapProps) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+    <div className="relative isolate h-full w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <ClientOnly fallback={<MapSkeleton />}>
         <Suspense fallback={<MapSkeleton />}>
           <OpsMap {...props} />
